@@ -1,0 +1,17 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "avr_compile",
+            "type": "shell",
+            "command": "avr-gcc main.c input_reg.c input_reg.h  -o main.elf -mmcu=attiny85 -DF_CPU=8000000LU -Os; avr-objcopy main.elf -O ihex main .hex; avrdude -c arduino_as_isp -p attiny85 -U flash:w:'main.hex':a -P COM4",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
