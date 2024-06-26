@@ -16,7 +16,7 @@
 
 
 /* DDS */
-#define NUM_VOICES 1
+#define NUM_VOICES 3
 
  // Current wave type selected
 uint8_t waveSetting = 0;
@@ -98,7 +98,53 @@ int main () {
 	sei();
 	while(1) {	  
 		ADCSRA |= (1 << ADSC);   //start conversion
-		Jump[0] = ADCH*16 ;
+		//Jump[0] = ADCH*16;
+		
+		uint16_t freq0 = 440;//ADCH*4;
+		uint16_t freq1 = 554;//ADCH*4;
+		uint16_t freq2 = 659;//ADCH*4;
+
+		if (incoming & (1 << 6)) { // vii chord
+			// for each chord, multiply the tonic note by some ratio to get the root of the chord
+			freq0 = (freq0*15)/8.0; // root is a major seventh above tonic
+
+			freq1 = (freq0*6)/5.0; // minor 3rd above root
+			freq2 = (freq0*45)/32.0; // diminished 5th above root
+
+		} else if (incoming & (1 << 5)) { // vi chord
+			freq0 = (freq0*5)/3.0; // root is a 6th above tonic
+			freq1 = (freq0*6)/5.0; // minor 3rd above root
+			freq2 = (freq0*3)/2.0; // perfect 5th above root
+			
+		} else if (incoming & (1 << 4)) { // V chord
+			freq0 = (freq0*3)/2.0; // root is a 5th above tonic
+			freq1 = (freq0*5)/4.0; // major 3rd above root
+			freq2 = (freq0*3)/2.0; // perfect 5th above root
+
+		} else if (incoming & (1 << 3)) { // IV chord
+			freq0 = (freq0*4)/3.0; // root is a 4th above tonic
+			freq1 = (freq0*5)/4.0; // major 3rd above root
+			freq2 = (freq0*3)/2.0; // perfect 5th above root
+
+		} else if (incoming & (1 << 2)) { // iii chord
+			freq0 = (freq0*5)/4.0; // root is a major 3rd above tonic
+			freq1 = (freq0*6)/5.0; // minor 3rd above root
+			freq2 = (freq0*3)/2.0; // perfect 5th above root
+
+		} else if (incoming & (1 << 1)) { // ii chord
+			freq0 = (freq0*9)/8.0; // root is a major 2nd above tonic
+			freq1 = (freq0*6)/5.0; // minor 3rd above root
+			freq2 = (freq0*3)/2.0; // perfect 5th above root
+
+		} else if (incoming & (1 << 0)) { // I chord
+		} else {
+			freq0 = 0;
+			freq1 = 0;
+			freq2 = 0;
+		}
+		Jump[0] = 2*freq0;
+		Jump[1] = 2*freq1;
+		Jump[2] = 2*freq2;
 
 		incoming = readRegister();
 		
@@ -109,21 +155,19 @@ int main () {
 
 // Interrupt to set the PWM duty cycle to the correct amplitude
 ISR(TIMER0_COMPA_vect) {
-	
-	
+	uint16_t amplitude = 0;
+
 	for (int i = 0; i < NUM_VOICES; i++) {
 		Acc[i] = Acc[i] + Jump[i];
-		
-		unsigned int amplitude = 0;
-		
+
 		// shift by 8 bits (convert from 16 bit to 8 bit)
 		// 2^8 is 256 so 8-bits can only represent numbers from 0-255
 		uint8_t currentAcc = Acc[i] >> 8;
 		waveSetting = 0; // 2 bit number that determines which waveform is created
-		if (incoming & (1 << 6)) {
+		if (incoming & (1 << 9)) {
 			waveSetting += 1 << 1;
-		}
-		if (incoming & (1 << 7)) {
+		} 
+		if (incoming & (1 << 10)) {
 			waveSetting += 1;
 		}
 		switch (waveSetting) { 
@@ -149,6 +193,6 @@ ISR(TIMER0_COMPA_vect) {
 				amplitude += currentAcc;
 				break;
 		}
-		OCR1A = amplitude; // set the PWM duty cycle to the amplitude of the wave
 	}
+	OCR1A = amplitude/NUM_VOICES; // set the PWM duty cycle to the amplitude of the wave
 }
