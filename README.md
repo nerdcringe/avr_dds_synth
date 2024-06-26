@@ -11,3 +11,7 @@
 	- Will feature multiple voices that can form chords
 
 	- Shift register to extend the digital input pins of the microcontroller
+
+# Circuit Schematic
+![avr_dds_synth](https://github.com/nerdcringe/avr_dds_synth/assets/54510965/e0bfdd01-8dfb-4d93-83f7-44c64f72f0cb)
+Switches D7-D1 are the buttons for playing chords. The others are buttons and switches for configuring other settings like waveform, chord type, etc.
