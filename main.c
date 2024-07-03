@@ -52,10 +52,19 @@ uint8_t sineLUT[LUT_SIZE] = {
 };
 
 
-
 uint16_t incoming = 0;
 
+ 
+uint16_t currentTonic = 32760;
+uint16_t keyDownPressTime = 0;
+uint16_t keyUpPressTime = 0;
 
+// https://en.wikipedia.org/wiki/Piano_key_frequencies
+int tonicFrequencies[12] = {
+	3520, 3729, 3951, 4186,
+	4435, 4699, 4978, 5274,
+	5588, 5920, 6272, 6645
+};
 
 
 
@@ -99,55 +108,102 @@ int main () {
 	while(1) {	  
 		ADCSRA |= (1 << ADSC);   //start conversion
 		//Jump[0] = ADCH*16;
+
 		
-		uint16_t freq0 = 440;//ADCH*4;
-		uint16_t freq1 = 554;//ADCH*4;
-		uint16_t freq2 = 659;//ADCH*4;
+		uint8_t playing = 1;
+
+		uint16_t tonicFreq = tonicFrequencies[currentTonic % 12];
+		
+		uint16_t rootFreq;
+		uint16_t thirdFreq;
+		uint64_t fifthFreq;
+
+		uint8_t minorThird = 0;
+		uint8_t diminishedFifth = 0;
 
 		if (incoming & (1 << 6)) { // vii chord
 			// for each chord, multiply the tonic note by some ratio to get the root of the chord
-			freq0 = (freq0*15)/8.0; // root is a major seventh above tonic
-
-			freq1 = (freq0*6)/5.0; // minor 3rd above root
-			freq2 = (freq0*45)/32.0; // diminished 5th above root
-
+			rootFreq = (((uint32_t)tonicFreq)*15)/8.0; // root is a major seventh above tonic
+			minorThird = 1;
+			diminishedFifth = 1;
 		} else if (incoming & (1 << 5)) { // vi chord
-			freq0 = (freq0*5)/3.0; // root is a 6th above tonic
-			freq1 = (freq0*6)/5.0; // minor 3rd above root
-			freq2 = (freq0*3)/2.0; // perfect 5th above root
-			
+			rootFreq = (tonicFreq*5)/3.0; // root is a 6th above tonic
+			minorThird = 1;
 		} else if (incoming & (1 << 4)) { // V chord
-			freq0 = (freq0*3)/2.0; // root is a 5th above tonic
-			freq1 = (freq0*5)/4.0; // major 3rd above root
-			freq2 = (freq0*3)/2.0; // perfect 5th above root
-
+			rootFreq = (tonicFreq*3)/2.0; // root is a 5th above tonic
 		} else if (incoming & (1 << 3)) { // IV chord
-			freq0 = (freq0*4)/3.0; // root is a 4th above tonic
-			freq1 = (freq0*5)/4.0; // major 3rd above root
-			freq2 = (freq0*3)/2.0; // perfect 5th above root
-
+			rootFreq = (tonicFreq*4)/3.0; // root is a 4th above tonic
 		} else if (incoming & (1 << 2)) { // iii chord
-			freq0 = (freq0*5)/4.0; // root is a major 3rd above tonic
-			freq1 = (freq0*6)/5.0; // minor 3rd above root
-			freq2 = (freq0*3)/2.0; // perfect 5th above root
-
+			rootFreq = (tonicFreq*5)/4.0; // root is a major 3rd above tonic
+			minorThird = 1;
 		} else if (incoming & (1 << 1)) { // ii chord
-			freq0 = (freq0*9)/8.0; // root is a major 2nd above tonic
-			freq1 = (freq0*6)/5.0; // minor 3rd above root
-			freq2 = (freq0*3)/2.0; // perfect 5th above root
-
+			rootFreq = (tonicFreq*9)/8.0; // root is a major 3rd above tonic
+			minorThird = 1;
 		} else if (incoming & (1 << 0)) { // I chord
+			rootFreq = tonicFreq;
 		} else {
-			freq0 = 0;
-			freq1 = 0;
-			freq2 = 0;
+			playing = 0;
 		}
-		Jump[0] = 2*freq0;
-		Jump[1] = 2*freq1;
-		Jump[2] = 2*freq2;
+
+		if (incoming & (1 << 11)) {
+			minorThird = !minorThird;
+		}
+
+		if (minorThird) {
+			thirdFreq = (rootFreq*6)/5.0; // minor 3rd above root
+		} else {
+			thirdFreq = (rootFreq*5)/4.0; // major 3rd above root
+		}
+
+		if (diminishedFifth) {
+			fifthFreq = (((uint64_t)rootFreq)*45)/32.0; // diminished 5th above root
+		} else {
+			fifthFreq = (rootFreq*3)/2.0; // perfect 5th above root
+		}
+
+		if (!playing) {
+			rootFreq = 0;
+			thirdFreq = 0;
+			fifthFreq = 0;
+		}
+
+		// As the analog input goes from 0 -> 256, each pitch goes down an octave one-by-one in a cycle
+		uint16_t inversionNum = (ADCH/20) + 2;
+		for (int i = 0; i < inversionNum; i++) {
+			if (i % 3 == 2) {
+				rootFreq /= 2;
+			}
+			if (i % 3 == 1) {
+				thirdFreq /= 2;
+			}
+			if (i % 3 == 0) {
+				fifthFreq /= 2;
+			}
+		}
+
+		Jump[0] = rootFreq;
+		Jump[1] = thirdFreq;
+		Jump[2] = fifthFreq;
 
 		incoming = readRegister();
+
+		if (incoming & (1 << 7)) {
+			keyDownPressTime++;
+		} else {
+			keyDownPressTime = 0;
+		}
+		if (keyDownPressTime == 2) {
+			currentTonic--;
+		}
 		
+		if (incoming & (1 << 8)) {
+			keyUpPressTime++;
+		} else {
+			keyUpPressTime = 0;
+		}
+		if (keyUpPressTime == 2) {
+			currentTonic++;
+		}
 	}
 }
 
