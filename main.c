@@ -1,5 +1,6 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <math.h>
 #include "input_reg.h"
 
 
@@ -12,7 +13,6 @@
 	-- Will feature multiple voices that can form chords
 	-- Shift register to extend the digital input pins of the microcontroller
 */
-
 
 
 /* DDS */
@@ -52,14 +52,26 @@ uint8_t sineLUT[LUT_SIZE] = {
 };
 
 
+// Most recent reading from the parallel-in serial-out shift register (74HC165)
 uint16_t incoming = 0;
-
  
+
+ // Tonic note is the home note for a given key. For example, the tonic in the key of A is just A.
+ // Since all the other notes are defined in relation to the tonic note, changing this will change the tonic
 uint16_t currentTonic = 32760;
+
+// To change the key, the key up/down buttons are pressed.
+// When the number of times a button is pressed matters, debouncing has to be taken into account
+// For more information: (https://en.wikipedia.org/wiki/Switch#Contact_bounce)
+// In order to debounce the buttons, we will count up while the button is pressed.
+// Only when a certain exact number is reached will the key actually change.
 uint16_t keyDownPressTime = 0;
 uint16_t keyUpPressTime = 0;
 
-// https://en.wikipedia.org/wiki/Piano_key_frequencies
+
+// Frequencies for the 12 tonics.
+// They are in the high octaves because it is more precise to divide high frequencies than multiply low frequencies.
+// For the exact values used: https://en.wikipedia.org/wiki/Piano_key_frequencies
 int tonicFrequencies[12] = {
 	3520, 3729, 3951, 4186,
 	4435, 4699, 4978, 5274,
@@ -106,93 +118,132 @@ int main () {
 	
 	sei();
 	while(1) {	  
-		ADCSRA |= (1 << ADSC);   //start conversion
-		//Jump[0] = ADCH*16;
-
-		
-		uint8_t playing = 1;
+		ADCSRA |= (1 << ADSC);   // Obtain the current analog input value
+		uint8_t isPlaying = 1;
 
 		uint16_t tonicFreq = tonicFrequencies[currentTonic % 12];
-		
 		uint16_t rootFreq;
 		uint16_t thirdFreq;
 		uint64_t fifthFreq;
 
+		// booleans that determine the structure of the chord
 		uint8_t minorThird = 0;
 		uint8_t diminishedFifth = 0;
+		uint8_t invertThird = 0;
+		uint8_t invertFifth = 0;
 
+
+		// Play the chord that corresponds to the button pressed
+		// For each chord, multiply the tonic note by some ratio to get the root frequency of the chord 
 		if (incoming & (1 << 6)) { // vii chord
-			// for each chord, multiply the tonic note by some ratio to get the root of the chord
-			rootFreq = (((uint32_t)tonicFreq)*15)/8.0; // root is a major seventh above tonic
+			rootFreq = (((uint32_t)tonicFreq)*15)/16; // root is a major seventh above tonic
 			minorThird = 1;
 			diminishedFifth = 1;
+			invertThird = 1;
+			invertFifth = 1;
 		} else if (incoming & (1 << 5)) { // vi chord
-			rootFreq = (tonicFreq*5)/3.0; // root is a 6th above tonic
+			rootFreq = (tonicFreq*5)/3; // root is a 6th above tonic
 			minorThird = 1;
+			invertThird = 1;
+			invertFifth = 1;
 		} else if (incoming & (1 << 4)) { // V chord
-			rootFreq = (tonicFreq*3)/2.0; // root is a 5th above tonic
+			rootFreq = (tonicFreq*3)/2; // root is a 5th above tonic
+			invertThird = 1;
+			invertFifth = 1;
 		} else if (incoming & (1 << 3)) { // IV chord
-			rootFreq = (tonicFreq*4)/3.0; // root is a 4th above tonic
+			rootFreq = (tonicFreq*4)/3; // root is a 4th above tonic
+			invertFifth = 1;
 		} else if (incoming & (1 << 2)) { // iii chord
-			rootFreq = (tonicFreq*5)/4.0; // root is a major 3rd above tonic
+			rootFreq = (tonicFreq*5)/4; // root is a major 3rd above tonic
 			minorThird = 1;
 		} else if (incoming & (1 << 1)) { // ii chord
-			rootFreq = (tonicFreq*9)/8.0; // root is a major 3rd above tonic
+			rootFreq = (tonicFreq*9)/8; // root is a major 3rd above tonic
 			minorThird = 1;
 		} else if (incoming & (1 << 0)) { // I chord
 			rootFreq = tonicFreq;
 		} else {
-			playing = 0;
+			isPlaying = 0;
 		}
 
+		// If the swamp major/minor button is pressed, turn a major chord into a minor chord and vice versa
 		if (incoming & (1 << 11)) {
 			minorThird = !minorThird;
 		}
 
+		// Set the other chord tones relative to the root frequency
 		if (minorThird) {
-			thirdFreq = (rootFreq*6)/5.0; // minor 3rd above root
+			thirdFreq = (rootFreq*6)/5; // minor 3rd above root
 		} else {
-			thirdFreq = (rootFreq*5)/4.0; // major 3rd above root
+			thirdFreq = (rootFreq*5)/4; // major 3rd above root
 		}
-
 		if (diminishedFifth) {
-			fifthFreq = (((uint64_t)rootFreq)*45)/32.0; // diminished 5th above root
+			fifthFreq = (((uint64_t)rootFreq)*45)/32; // diminished 5th above root
 		} else {
-			fifthFreq = (rootFreq*3)/2.0; // perfect 5th above root
+			fifthFreq = (rootFreq*3)/2; // perfect 5th above root
 		}
 
-		if (!playing) {
+		// Don't play if no chord button is pressed
+		if (!isPlaying) {
 			rootFreq = 0;
 			thirdFreq = 0;
 			fifthFreq = 0;
 		}
 
-		// As the analog input goes from 0 -> 256, each pitch goes down an octave one-by-one in a cycle
+		// If any note is an octave above the tonic (2x higher frequency), then bring it down an octave (divide frequency by 2)
+		if (rootFreq >= tonicFreq*1.95) { // value to check is *1.95 to account for integer division rounding
+			rootFreq /= 2;
+		}
+		if (thirdFreq >= tonicFreq*1.95) {
+			thirdFreq /= 2;
+		}
+		if (fifthFreq >= tonicFreq*1.95) {
+			fifthFreq /= 2;
+		}
+
+
+		// Sort the frequencies to make the inversions change in the right order.
+		uint16_t lowFreq = fmin(rootFreq, fmin(thirdFreq, fifthFreq));
+		uint16_t highFreq = fmax(rootFreq, fmax(thirdFreq, fifthFreq));
+		uint16_t midFreq;
+		if (rootFreq > lowFreq && rootFreq < highFreq) {
+			midFreq = rootFreq;
+		} else if (thirdFreq > lowFreq && thirdFreq < highFreq) {
+			midFreq = thirdFreq;
+		} else {
+			midFreq = fifthFreq;
+		}
+
+
+		// As the analog input goes from 0 -> 256, each pitch goes down an octave one-by-one in a cycle.
+		// The highest pitch goes down each time, which is why they needed to be sorted.;
 		uint16_t inversionNum = (ADCH/20) + 2;
 		for (int i = 0; i < inversionNum; i++) {
 			if (i % 3 == 2) {
-				rootFreq /= 2;
+				lowFreq /= 2;
 			}
 			if (i % 3 == 1) {
-				thirdFreq /= 2;
+				midFreq /= 2;
 			}
 			if (i % 3 == 0) {
-				fifthFreq /= 2;
+				highFreq /= 2;
 			}
 		}
-
-		Jump[0] = rootFreq;
-		Jump[1] = thirdFreq;
-		Jump[2] = fifthFreq;
+		
+		// Assign the frequencies to the phase accumulator jump value
+		Jump[0] = lowFreq*2;
+		Jump[1] = midFreq*2;
+		Jump[2] = highFreq*2;
+		
 
 		incoming = readRegister();
 
+		// Key change buttons
 		if (incoming & (1 << 7)) {
 			keyDownPressTime++;
 		} else {
 			keyDownPressTime = 0;
 		}
-		if (keyDownPressTime == 2) {
+		if (keyDownPressTime == 2) { // change keys once only when button pressed for 2 cycles (simple debouncing)
 			currentTonic--;
 		}
 		
@@ -211,7 +262,7 @@ int main () {
 
 // Interrupt to set the PWM duty cycle to the correct amplitude
 ISR(TIMER0_COMPA_vect) {
-	uint16_t amplitude = 0;
+	uint16_t sampleHeight = 0;
 
 	for (int i = 0; i < NUM_VOICES; i++) {
 		Acc[i] = Acc[i] + Jump[i];
@@ -228,27 +279,31 @@ ISR(TIMER0_COMPA_vect) {
 		}
 		switch (waveSetting) { 
 			case 0b00: // SINE
-				amplitude += sineLUT[currentAcc];
+				// Access the current sample of the phase accumulator
+				sampleHeight += sineLUT[currentAcc];
 				break;
 				
 			case 0b01: // TRIANGLE
+				// Increase sample height for the first half, then decrease for the second.
 				if (currentAcc < 128) {
-					amplitude += 2*currentAcc;
+					sampleHeight += 2*currentAcc;
 				} else {
-					amplitude += 2*(255-currentAcc);
+					sampleHeight += 2*(255-currentAcc);
 				}
 				break;
 				
 			case 0b10: // SQUARE
+				// Max out sample height for the first half, then don't add anything for the second half
 				if (currentAcc < 128) {
-					amplitude += 255;
+					sampleHeight += 255;
 				}
 				break; 
 			
 			case 0b11: // SAW
-				amplitude += currentAcc;
+				// Increase the sample height until the phase accumulator overflows
+				sampleHeight += currentAcc;
 				break;
 		}
 	}
-	OCR1A = amplitude/NUM_VOICES; // set the PWM duty cycle to the amplitude of the wave
+	OCR1A = sampleHeight/NUM_VOICES; // set the PWM duty cycle to the average sample height
 }
