@@ -23,7 +23,7 @@
 #define NUM_VOICES (NOTES_PER_CHORD * MAX_CHORDS)
 
  // Current wave type selected
-uint8_t waveSetting = 0;
+volatile uint8_t waveSetting = 0;
 
 // Phase accumulator: keeps track of current phase of wave
 volatile unsigned int Acc[NUM_VOICES] = {0};
@@ -60,7 +60,7 @@ uint16_t keyUpPressTime = 0;
 
  // Tonic note is the home note for a given key. For example, the tonic in the key of A is just A.
  // Every note in a key is defined in relation to the tonic, so changing the tonic changes the whole key.
-uint16_t keyIndex = 32764;
+uint8_t keyIndex = 5;
 int tonicFreqs[12] = {
 	3520, 3729, 3951, 4186,
 	4435, 4699, 4978, 5274,
@@ -69,7 +69,6 @@ int tonicFreqs[12] = {
 
 
 uint8_t volumes[NUM_VOICES] = {0};
-
 
 
 int main () {
@@ -107,10 +106,11 @@ int main () {
 			insertChord(tonicFreq); // root is tonic
 		}
 
-		Jump[0] = getChord(0);
-		Jump[1] = getChord(1);
-		Jump[2] = getChord(2);
-		Jump[3] = getChord(3);
+		// Four one-note chords can be played at once (for testing)
+		Jump[0] = getChord(0) >> 2;
+		Jump[1] = getChord(1) >> 2;
+		Jump[2] = getChord(2) >> 2;
+		Jump[3] = getChord(3) >> 2;
 
 
 		// Change the key once when the key change button starts being pressed
@@ -120,6 +120,26 @@ int main () {
 		if (getInputStarted(8)) {
 			keyIndex++;
 		}
+		if (keyIndex > 11) {
+			keyIndex = 0;
+		} else if (keyIndex < 0) {
+			keyIndex = 11;
+		}
+
+		if (getInputState(9)) {
+			if (getInputState(10)) {
+				waveSetting = 0b00;
+			} else {
+				waveSetting = 0b01;
+			}
+		} else {
+			if (getInputState(10)) {
+				waveSetting = 0b10;
+			} else {
+				waveSetting = 0b11;
+			}
+		} 
+		
 	}
 }
 
@@ -134,13 +154,7 @@ ISR(TIMER0_COMPA_vect) {
 		// shift by 8 bits (convert from 16 bit to 8 bit)
 		// 2^8 is 256 so 8-bits can only represent numbers from 0-255
 		uint8_t currentAcc = Acc[i] >> 8;
-		waveSetting = 0; // 2 bit number that determines which waveform is created
-		if (getInputState(9)) {
-			waveSetting += 1 << 1;
-		} 
-		if (getInputState(10)) {
-			waveSetting += 1;
-		}
+		
 		switch (waveSetting) { 
 			case 0b00: // SINE
 				// Access the current sample of the phase accumulator
