@@ -4,6 +4,9 @@
         "input_reg.h": "c",
         "theory.h": "c",
         "interrupt.h": "c",
-        "chord_queue.h": "c"
+        "chord_queue.h": "c",
+        "io.h": "c",
+        "wave_gen.h": "c",
+        "pgmspace.h": "c"
     }
 }
