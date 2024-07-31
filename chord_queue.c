@@ -8,6 +8,10 @@
 
 chord_t queue[MAX_CHORDS] = {0, 0, 0, 0};
 
+uint8_t attackRate = 10;
+uint8_t releaseRate = 1;
+
+
 uint8_t isEmpty(chord_t chord) {
     return chord.amplitude <= 0 && !chord.stillHeld;
 }
@@ -26,10 +30,11 @@ int getNumChords() {
     return num;
 }
 
+
 void playChord(int frequency, uint8_t buttonIndex) {
     chord_t newChord;
     newChord.freq0 = frequency;
-    newChord.amplitude = 100;
+    newChord.amplitude = 1;
     newChord.stillHeld = 1;
     newChord.buttonIndex = buttonIndex;
 
@@ -52,7 +57,7 @@ void playChord(int frequency, uint8_t buttonIndex) {
 void releaseChord(int buttonIndex) {
     for (int i = 0; i < MAX_CHORDS; i++) {
         if (queue[i].buttonIndex == buttonIndex && queue[i].stillHeld) {
-            //queue[i].stillHeld = 0;
+            queue[i].stillHeld = 0;
         }
     }
 }
@@ -61,18 +66,17 @@ void releaseChord(int buttonIndex) {
 void manageChords() {
     for (int i = 0; i < MAX_CHORDS; i++) {
         if (queue[i].stillHeld) {
-            queue[i].amplitude = 1;/*
-            if (queue[i].amplitude < MAX_AMPLITUDE) {
-                queue[i].amplitude += 1;
+            if (queue[i].amplitude < MAX_AMPLITUDE-1 - attackRate) {
+                queue[i].amplitude += attackRate;
             } else {
-                queue[i].amplitude = MAX_AMPLITUDE;
-            }*/
-        /*} else {
-            if (queue[i].amplitude > 0) {
-                queue[i].amplitude -= 1;
+                queue[i].amplitude = MAX_AMPLITUDE-1;
+            }
+        } else {
+            if (queue[i].amplitude > releaseRate) {
+                queue[i].amplitude -= releaseRate;
             } else {
                 queue[i].amplitude = 0;
-            }*/
+            }
         }
     }
 }

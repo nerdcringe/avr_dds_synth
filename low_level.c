@@ -30,7 +30,8 @@ void initPWM() {
 	TCCR0A = 3<<WGM00;                       // Fast PWM
 	TCCR0B = 1<<WGM02 | 2<<CS00;             // 1/8 prescale
 	TIMSK = 1<<OCIE0A;                       // Enable compare match, disable overflow
-	OCR0A = 60;                              // Divide by 61, giving us increments of about 1 Hz
+	OCR0A = 121;                              // Divide by 61, giving us increments of about 1 Hz
+	// 60 121 242
 }
 
 void setDutyCycle(uint8_t dutyCycle) {

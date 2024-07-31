@@ -7,6 +7,5 @@
         "chord_queue.h": "c",
         "io.h": "c",
         "wave_gen.h": "c",
-        "pgmspace.h": "c"
     }
 }

@@ -21,7 +21,7 @@ volatile uint8_t amplitude[MAX_VOICES] = {1,1,1,1};
 
 // Precomputed lookup table for a sine wave
 // Other waveforms are simpler and don't need to be precomputed
-const uint8_t sineLUT[LUT_SIZE] PROGMEM = {
+const uint8_t sineLUT[LUT_SIZE] = {
 	128, 134, 140, 146, 152, 158, 165, 170, 176, 182, 188, 193, 198, 203, 208, 213,
 	218, 222, 226, 230, 234, 237, 240, 243, 245, 248, 250, 251, 253, 254, 254, 255,
 	255, 255, 254, 254, 253, 251, 250, 248, 245, 243, 240, 237, 234, 230, 226, 222,
@@ -37,13 +37,11 @@ void setJump(uint8_t index, int jumpSize) {
     jump[index] = jumpSize;
 }
 
-
-void setAmplitude(uint8_t index, uint8_t ampl) {
-    //amplitude[index] = ampl;
+void setAmplitude(uint8_t index, uint16_t ampl) {
+    amplitude[index] = ampl;
 }
 
 
-//int t = 0;
 void setWaveOutput(uint8_t waveSetting) {
     uint16_t totalSampleHeight = 0;
 
@@ -54,12 +52,12 @@ void setWaveOutput(uint8_t waveSetting) {
 		// 2^8 is 256 so 8-bits can only represent numbers from 0-255
 		uint8_t currentAcc = accumulator[i] >> 8;
 
-        uint16_t sampleHeight = 0;
+        uint32_t sampleHeight = 0;
 		
 		switch (waveSetting) { 
 			case 0b00: // SINE
 				// Access the current sample of the phase accumulator
-				sampleHeight = pgm_read_byte(&sineLUT[currentAcc/2]);
+				sampleHeight = sineLUT[currentAcc/2];//pgm_read_byte(&sineLUT[currentAcc/2]);
 				break;
 
 			case 0b10: // TRIANGLE
@@ -83,18 +81,7 @@ void setWaveOutput(uint8_t waveSetting) {
 				sampleHeight = currentAcc;
 				break;
 		}
-        
-        
-        /*int32_t signedSampleHeight = (sampleHeight - 128);
-        signedSampleHeight = signedSampleHeight / 2;//*= amplitude[i];
-        //signedSampleHeight /= MAX_AMPLITUDE;
-        totalSampleHeight += signedSampleHeight + 128;*/
-
-        
-            totalSampleHeight += sampleHeight;// * amplitude[i];
-
-        //if (t > 50000) t = 0;
+        totalSampleHeight += (sampleHeight * amplitude[i])/MAX_AMPLITUDE;
 	}
-    //t++;
 	setDutyCycle(totalSampleHeight/MAX_VOICES); // set the PWM duty cycle to the average sample height
 }

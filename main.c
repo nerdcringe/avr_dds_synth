@@ -66,7 +66,7 @@ int main () {
 			playChord(tonicFreq, 0); // root is tonic
 		}
 		
-		/*
+		
 		for (int i = 0; i < 7; i++) {
 			if (getInputState(i) == 0) {
 				releaseChord(i);
@@ -78,7 +78,7 @@ int main () {
 		for (int i = 0; i < getMaxVoices(); i++) {
 			setJump(i, getChord(i).freq0/4);
 			setAmplitude(i, getChord(i).amplitude);
-		}*/
+		}
 
 		// Change the key once when the key change button starts being pressed
 		if (getInputStarted(7)) {
