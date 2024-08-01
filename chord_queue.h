@@ -1,14 +1,14 @@
 #include <avr/io.h>
 
-#define MAX_CHORDS 4
-#define NOTES_PER_CHORD 1
+#define MAX_CHORDS 2
+#define FREQS_PER_CHORD 3
 #define MAX_AMPLITUDE 256
 
 
 typedef struct chord {
     uint16_t freq0;
-    //int freq1;
-    //int freq2;
+    uint16_t freq1;
+    uint16_t freq2;
     uint16_t amplitude;
     uint8_t stillHeld;
     uint8_t buttonIndex;
@@ -19,7 +19,7 @@ typedef struct chord {
 
 int getNumChords();
 chord_t getChord(uint8_t index);
-void playChord(int freq, uint8_t buttonIndex);
+void playChord(uint16_t freq0, uint16_t freq1, uint16_t freq2, uint8_t buttonIndex);
 
-void releaseChord(int buttonIndex);
+void releaseChord(uint8_t buttonIndex);
 void manageChords();

@@ -15,6 +15,21 @@
 #define SR_LATCH PB0
 
 
+#define I_CHORD 0
+#define ii_CHORD 1
+#define iii_CHORD 2
+#define IV_CHORD 3
+#define V_CHORD 4
+#define vi_CHORD 5
+#define vii_CHORD 6
+#define MAJ_MIN_SWAP 7
+
+#define KEY_UP 8
+#define KEY_DOWN 9
+#define WAVE1 10
+#define WAVE0 11
+
+
 void initInputRegister();
 void readInputRegister();
 

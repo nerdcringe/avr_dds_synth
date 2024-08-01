@@ -3,7 +3,7 @@
 #include "chord_queue.h"
 
 // Maximum number of simultaneous frequencies able to be played ad once
-#define MAX_VOICES (NOTES_PER_CHORD * MAX_CHORDS)
+#define MAX_VOICES (FREQS_PER_CHORD * MAX_CHORDS)
 
 uint8_t getMaxVoices() { return MAX_VOICES; }
 
@@ -13,8 +13,7 @@ volatile unsigned int accumulator[MAX_VOICES] = {0};
  // How far to increment the corresponding phase accumulator
 volatile unsigned int jump[MAX_VOICES] = {0};
 
-volatile uint8_t amplitude[MAX_VOICES] = {1,1,1,1};
-
+volatile uint8_t amplitude[MAX_VOICES] = {0};
 
 
 #define LUT_SIZE 128
@@ -55,12 +54,12 @@ void setWaveOutput(uint8_t waveSetting) {
         uint32_t sampleHeight = 0;
 		
 		switch (waveSetting) { 
-			case 0b00: // SINE
+			case 0: // SINE
 				// Access the current sample of the phase accumulator
 				sampleHeight = sineLUT[currentAcc/2];//pgm_read_byte(&sineLUT[currentAcc/2]);
 				break;
 
-			case 0b10: // TRIANGLE
+			case 1: // TRIANGLE
 				// Increase sample height for the first half, then decrease for the second.
 				if (currentAcc < 128) {
 					sampleHeight = 2*currentAcc;
@@ -69,19 +68,19 @@ void setWaveOutput(uint8_t waveSetting) {
 				}
 				break;
 				
-			case 0b01: // SQUARE
+			case 2: // SQUARE
 				// Max out sample height for the first half, then don't add anything for the second half
 				if (currentAcc < 128) {
 					sampleHeight = 255;
 				}
 				break; 
 			
-			case 0b11: // SAW
+			case 3: // SAW
 				// Increase the sample height until the phase accumulator overflows
 				sampleHeight = currentAcc;
 				break;
 		}
-        totalSampleHeight += (sampleHeight * amplitude[i])/MAX_AMPLITUDE;
+        totalSampleHeight += ((sampleHeight * amplitude[i]) >> 8);
 	}
-	setDutyCycle(totalSampleHeight/MAX_VOICES); // set the PWM duty cycle to the average sample height
+	setDutyCycle(totalSampleHeight >> 3); // set the PWM duty cycle to the average sample height
 }

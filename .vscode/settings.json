@@ -7,5 +7,6 @@
         "chord_queue.h": "c",
         "io.h": "c",
         "wave_gen.h": "c",
+        "low_level.h": "c"
     }
 }
