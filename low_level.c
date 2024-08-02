@@ -50,7 +50,8 @@ void initAnalogIn() {
 						  //and set division factor-8 for 125kHz ADC clock
 }
 
-void updateAnalogIn() { 
+
+void updateAnalogIn() {
 	ADCSRA = setBit(ADCSRA, ADSC);// Convert the current analog input value
 }
 
