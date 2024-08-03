@@ -8,8 +8,8 @@
 
 chord_t queue[MAX_CHORDS] = {0};
 
-uint8_t attackRate = 10;
-uint8_t releaseRate = 1;
+uint8_t attackRate = 15;
+uint8_t releaseRate = 15;
 
 
 uint8_t isEmpty(chord_t chord) {

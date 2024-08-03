@@ -22,6 +22,9 @@
  // Current wave type selected
 volatile uint8_t waveSetting = 0;
 uint16_t keyIndex = 32767;
+uint8_t lastInversionNum = 0;
+uint8_t inversionChangeTime = 0;
+
 
 int main () {
 	initPWM();
@@ -33,18 +36,26 @@ int main () {
 		updateAnalogIn();
 		readInputRegister();
 
+		uint8_t inversionNum = (ADCH/28);
+
+		if (inversionNum != lastInversionNum) {
+			inversionChangeTime = 0;
+		}
+		if (inversionChangeTime < 254) {
+			inversionChangeTime++;
+		}
+
 		for (uint16_t buttonIndex = 0; buttonIndex < 7; buttonIndex++) {
-			if (getInputStarted(buttonIndex)) {
+			if (getInputStarted(buttonIndex) || (getInputState(buttonIndex) && inversionChangeTime == 128)) {
 
 				uint16_t lowFreq, midFreq, highFreq;
-				uint8_t inversionNum = (ADCH/24);
 
 				getMainFreqs(keyIndex, buttonIndex, getInputState(MAJ_MIN_SWAP),
 							inversionNum, &lowFreq, &midFreq, &highFreq);
 
 				playChord(lowFreq, midFreq, highFreq, buttonIndex);
 
-			} else if (getInputState(buttonIndex) == 0) {
+			} else if (getInputState(buttonIndex) == 0 || (getInputState(buttonIndex) && inversionChangeTime == 16)) {
 				releaseChord(buttonIndex);
 			}
 		}
@@ -90,7 +101,9 @@ int main () {
 				waveSetting = 3;
 			}
 		}
+
 		
+		lastInversionNum = inversionNum;
 	}
 }
 
