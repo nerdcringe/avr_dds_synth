@@ -46,7 +46,7 @@ int main () {
 		}
 
 		for (uint16_t buttonIndex = 0; buttonIndex < 7; buttonIndex++) {
-			if (getInputStarted(buttonIndex) || (getInputState(buttonIndex) && inversionChangeTime == 128)) {
+			if (getInputStarted(buttonIndex) || (getInputState(buttonIndex) && inversionChangeTime == 80)) {
 
 				uint16_t lowFreq, midFreq, highFreq;
 
@@ -55,7 +55,7 @@ int main () {
 
 				playChord(lowFreq, midFreq, highFreq, buttonIndex);
 
-			} else if (getInputState(buttonIndex) == 0 || (getInputState(buttonIndex) && inversionChangeTime == 16)) {
+			} else if (getInputState(buttonIndex) == 0 || (getInputState(buttonIndex) && inversionChangeTime == 12)) {
 				releaseChord(buttonIndex);
 			}
 		}
@@ -101,7 +101,6 @@ int main () {
 				waveSetting = 3;
 			}
 		}
-
 		
 		lastInversionNum = inversionNum;
 	}

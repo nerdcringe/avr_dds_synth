@@ -8,8 +8,8 @@
 
 chord_t queue[MAX_CHORDS] = {0};
 
-uint8_t attackRate = 15;
-uint8_t releaseRate = 15;
+uint8_t attackRate = 12;
+uint8_t releaseRate = 3;
 
 
 uint8_t isEmpty(chord_t chord) {
@@ -19,6 +19,8 @@ uint8_t isEmpty(chord_t chord) {
 chord_t getChord(uint8_t index) {
     return queue[index];
 }
+
+
 
 int getNumChords() {
     int num = 0;
@@ -76,7 +78,7 @@ void manageChords() {
         } else {
             if (queue[i].amplitude >= 1){//releaseRate + 1) {
                 //queue[i].amplitude -= releaseRate;
-                queue[i].amplitude = (queue[i].amplitude * 127)/128;
+                queue[i].amplitude = (queue[i].amplitude * (256-releaseRate))/256;
             } else {
                 queue[i].amplitude = 1;
             }

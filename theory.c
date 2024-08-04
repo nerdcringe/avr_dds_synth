@@ -1,4 +1,5 @@
 #include "theory.h"
+#include "input_reg.h"
 
 
 #define I_CHORD 0
@@ -90,15 +91,21 @@ void getMainFreqs(uint8_t keyIndex, uint8_t chordNum, uint8_t swapMajMin, uint8_
         fifthFreq /= 2;
     }
     
-    // Sort the frequencies to make the inversion cycle change in the right order.
-    *lowFreq = fmin(rootFreq, fmin(thirdFreq, fifthFreq));
-    *highFreq = fmax(rootFreq, fmax(thirdFreq, fifthFreq));
-    if (rootFreq > *lowFreq && rootFreq < *highFreq) {
-        *midFreq = rootFreq;
-    } else if (thirdFreq > *lowFreq && thirdFreq < *highFreq) {
-        *midFreq = thirdFreq;
+    if (getInputState(SINGLE_NOTE) == 0) {
+        // Sort the frequencies to make the inversion cycle change in the right order.
+        *lowFreq = fmin(rootFreq, fmin(thirdFreq, fifthFreq));
+        *highFreq = fmax(rootFreq, fmax(thirdFreq, fifthFreq));
+        if (rootFreq > *lowFreq && rootFreq < *highFreq) {
+            *midFreq = rootFreq;
+        } else if (thirdFreq > *lowFreq && thirdFreq < *highFreq) {
+            *midFreq = thirdFreq;
+        } else {
+            *midFreq = fifthFreq;
+        }
     } else {
-        *midFreq = fifthFreq;
+        *lowFreq = rootFreq;
+        *midFreq = thirdFreq;
+        *highFreq = fifthFreq;
     }
 
     // As the analog input value increases, each pitch goes down an octave one-by-one in a cycle.

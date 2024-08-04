@@ -1,6 +1,7 @@
 #include "wave_gen.h"
 #include "low_level.h"
 #include "chord_queue.h"
+#include "input_reg.h"
 
 // Maximum number of simultaneous frequencies able to be played ad once
 #define MAX_VOICES (FREQS_PER_CHORD * MAX_CHORDS)
@@ -44,7 +45,11 @@ void setAmplitude(uint8_t index, uint16_t ampl) {
 void setWaveOutput(uint8_t waveSetting) {
     uint16_t totalSampleHeight = 0;
 
-	for (int i = 0; i < MAX_VOICES; i++) {
+	uint8_t voiceSkip = 1;
+	if (getInputState(SINGLE_NOTE)) {
+		voiceSkip = 3;
+	}
+	for (int i = 0; i < MAX_VOICES; i += voiceSkip) {
 		accumulator[i] = accumulator[i] + jump[i];
 
 		// shift by 8 bits (convert from 16 bit to 8 bit)
@@ -82,5 +87,10 @@ void setWaveOutput(uint8_t waveSetting) {
 		}
         totalSampleHeight += ((sampleHeight * amplitude[i]) >> 8);
 	}
-	setDutyCycle(totalSampleHeight >> 3); // set the PWM duty cycle to the average sample height
+	 // set the PWM duty cycle to the average sample height
+	if (getInputState(SINGLE_NOTE)) {
+		setDutyCycle(totalSampleHeight >> 1);
+	} else {
+		setDutyCycle(totalSampleHeight >> 3);
+	}
 }

@@ -21,6 +21,7 @@
 #define KEY_DOWN 9
 #define WAVE1 10
 #define WAVE0 11
+#define SINGLE_NOTE 12
 
 
 void initInputRegister();
