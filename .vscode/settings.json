@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "lowlevel.h": "c",
+        "input_reg.h": "c",
+        "theory.h": "c",
+        "interrupt.h": "c",
+        "io.h": "c",
+        "wave_gen.h": "c",
+        "low_level.h": "c"
+    }
+}
