@@ -1,8 +1,5 @@
 #include "wave_gen.h"
 #include "low_level.h"
-#include "input_reg.h"
-
-
 
 volatile uint8_t numActiveVoices = 0;
 

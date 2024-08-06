@@ -6,6 +6,8 @@
         "interrupt.h": "c",
         "io.h": "c",
         "wave_gen.h": "c",
-        "low_level.h": "c"
+        "low_level.h": "c",
+        "input.h": "c",
+        "sr_74hc165.h": "c"
     }
 }

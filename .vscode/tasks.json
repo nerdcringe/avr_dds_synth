@@ -6,7 +6,7 @@
         {
             "label": "avr_compile",
             "type": "shell",
-            "command": "avr-gcc main.c low_level.c low_level.h input_reg.c input_reg.h wave_gen.c wave_gen.h theory.c theory.h -o main.elf -mmcu=attiny85 -DF_CPU=16000000LU -Os; avr-objcopy main.elf -O ihex main.hex; avrdude -c arduino_as_isp -p attiny85 -U flash:w:'main.hex':a -P COM4",
+            "command": "avr-gcc -I${workspaceFolder}/include src/*.c include/*.h -o main.elf -mmcu=attiny85 -DF_CPU=16000000LU -Os; avr-objcopy main.elf -O ihex main.hex; avrdude -c arduino_as_isp -p attiny85 -U flash:w:'main.hex':a -P COM4",
             "problemMatcher": [],
             "group": {
                 "kind": "build",
@@ -15,3 +15,5 @@
         }
     ]
 }
+
+//avr-gcc main.c low_level.c low_level.h input.c input.h wave_gen.c wave_gen.h theory.c theory.h shift_register_74HC165.h shift_register_74HC165.c -o main.elf -mmcu=attiny85 -DF_CPU=16000000LU -Os; avr-objcopy main.elf -O ihex main.hex; avrdude -c arduino_as_isp -p attiny85 -U flash:w:'main.hex':a -P COM4

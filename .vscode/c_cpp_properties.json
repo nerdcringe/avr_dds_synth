@@ -4,6 +4,7 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
+                "${workspaceFolder}/include",
                 "C:\\AVR\\avr8-gnu-toolchain\\avr\\include",
             ],
             "defines": [

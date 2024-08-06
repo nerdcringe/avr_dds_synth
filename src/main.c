@@ -1,11 +1,22 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <math.h>
-#include "input_reg.h"
+#include "input.h"
 #include "low_level.h"
 #include "wave_gen.h"
 #include "theory.h"
 
+
+#define SR_DATA PB3
+#define SR_CLK PB2
+#define SR_LATCH PB0
+
+#define MAJ_MIN_SWAP 7
+#define KEY_UP 8
+#define KEY_DOWN 9
+#define WAVE1 10
+#define WAVE0 11
+#define SUSTAIN_MODE 12
 
 /*
 	DDS Chord-Playing Piano for the ATtiny85 Microcontroller
@@ -28,12 +39,12 @@ uint8_t inversionChangeTime = 0;
 int main () {
 	initPWM();
 	initAnalogIn();
-	initInputRegister();
+	initInput(SR_DATA, SR_CLK, SR_LATCH);
 	sei(); // Enable interrupts
 	
 	while(1) {
 		updateAnalogIn();
-		readInputRegister();
+		updateInput();
 
 		uint8_t inversionNum = (ADCH/28);
 
@@ -59,6 +70,8 @@ int main () {
 				break;
 			}
 		}
+
+		// Release notes not being played unless sustain mode is on
 		if (!playing && !getInputState(SUSTAIN_MODE)) {
 			for (int i = 0; i < MAX_VOICES; i++) {
 				setJump(i, 0);
