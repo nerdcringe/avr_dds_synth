@@ -9,5 +9,6 @@
         "low_level.h": "c",
         "input.h": "c",
         "sr_74hc165.h": "c"
-    }
+    },
+    "C_Cpp.errorSquiggles": "enabled"
 }

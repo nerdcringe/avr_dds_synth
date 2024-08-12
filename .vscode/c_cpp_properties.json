@@ -6,6 +6,7 @@
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/include",
                 "C:\\AVR\\avr8-gnu-toolchain\\avr\\include",
+                "C:\\AVR\\avr8-gnu-toolchain\\avr\\include\\avr\\"
             ],
             "defines": [
                 "_DEBUG",

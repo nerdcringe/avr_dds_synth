@@ -15,9 +15,9 @@
  // Tonic note is the home note for a given key. For example, the tonic in the key of A is just A.
  // Every note in a key is defined in relation to the tonic, so changing the tonic changes the whole key.
 int tonicFreqs[12] = {
-	3520, 3729, 3951, 4186,
-	4435, 4699, 4978, 5274,
-	5588, 5920, 6272, 6645
+	3520/2, 3729/2, 3951/2, 4186/2,
+	4435/2, 4699/2, 4978/2, 5274/2,
+	5588/2, 5920/2, 6272/2, 6645/2
 };
 
 
@@ -25,8 +25,8 @@ int tonicFreqs[12] = {
 void getMainFreqs(uint8_t keyIndex, uint8_t chordNum, uint8_t swapMajMin, uint8_t inversionNum,
     uint16_t* lowFreq, uint16_t* midFreq, uint16_t* highFreq) {
     
-	uint16_t tonicFreq = tonicFreqs[keyIndex % 12];
-    uint16_t rootFreq = 0;
+	uint32_t tonicFreq = tonicFreqs[keyIndex % 12];
+    uint32_t rootFreq = 0;
     uint16_t thirdFreq = 0;
     uint16_t fifthFreq = 0;
 
@@ -36,7 +36,7 @@ void getMainFreqs(uint8_t keyIndex, uint8_t chordNum, uint8_t swapMajMin, uint8_
     
     switch (chordNum) {
     case vii_CHORD:
-        rootFreq = (((uint64_t)tonicFreq)*15)/8;
+        rootFreq = ((tonicFreq)*15)/8;
         minorThird = 1;
         diminishedFifth = 1;
     break;
@@ -74,7 +74,7 @@ void getMainFreqs(uint8_t keyIndex, uint8_t chordNum, uint8_t swapMajMin, uint8_
     }
 
     if (diminishedFifth) {
-        fifthFreq = (((uint64_t)rootFreq)*45)/32; // diminished 5th above root
+        fifthFreq = ((rootFreq)*45)/32; // diminished 5th above root
     } else {
         fifthFreq = (rootFreq*3)/2; // perfect 5th above root
     }
